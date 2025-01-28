@@ -28,6 +28,7 @@ function displayWeather(data, lat, lon) {
   wind.textContent = data.windspeed;
 }
 
+
 // Get Weather for User's Location
 function fetchWeatherByLocation() {
   if (navigator.geolocation) {
@@ -49,19 +50,33 @@ function showError(message) {
 }
 
 // Search Button Click
-searchBtn.addEventListener("click", () => {
-  const city = locationInput.value.trim();
+searchBtn.addEventListener("click", async () => {
+  const city = locationInput.value.trim(); // Get city name from input
   if (city) {
-    // Use a geocoding service to convert city to lat/lon (e.g., OpenCage, PositionStack).
-    showError("Geocoding not implemented. Use location button for now.");
+    try {
+      // Fetch latitude and longitude using Open-Meteo's geocoding API
+      const geoResponse = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${city}`);
+      if (!geoResponse.ok) throw new Error("Failed to fetch location data");
+      
+      const geoData = await geoResponse.json();
+      
+      if (!geoData.results || geoData.results.length === 0) {
+        showError("City not found. Please try again.");
+        return;
+      }
+      
+      const { latitude, longitude } = geoData.results[0]; // Extract latitude and longitude
+      fetchWeather(latitude, longitude); // Fetch weather data using lat/lon
+    } catch (err) {
+      showError(err.message);
+    }
   } else {
-    showError("Please enter a city name");
+    showError("Please enter a city name"); // Show error if input is empty
   }
 });
+
 
 // Location Button Click
 locationBtn.addEventListener("click", fetchWeatherByLocation);
 
 
-// Add this in `displayWeather`
-const iconUrl = `https://open-meteo.com/icons/${data.weathercode}.png`;
